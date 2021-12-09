@@ -28,9 +28,9 @@
 #include <SocketIOclient_Generic.h>
 
 #include <Hash.h>
+#include <string.h>
 
-#define ledPin_MAN D2
-#define ledPin_AUTO D1
+#define ledPin D2
 
 ESP8266WiFiMulti WiFiMulti;
 SocketIOclient socketIO;
@@ -92,6 +92,8 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t *payload, size_t length)
 // function for toggling the LED using socket.io
 void toggleLED(socketIOmessageType_t type, uint8_t *payload, size_t length)
 {
+    Serial.println((char *)payload);
+    
     // declare a subs with typee of char which will store up to 5 characters
     char subs[5];
     memcpy(subs, &payload[16], 4);

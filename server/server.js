@@ -36,8 +36,10 @@ io.on("connection", function (client) {
     io.sockets.emit("mode", automode);
     client.on("trigger", function (state) {
         automode.state = !automode.state;
+        light.state = light.state;
         console.log("id: " + client.id + " automode: " + automode.state);
-        io.sockets.emit("mode", automode);
+        console.log("id: " + client.id + " light: " + light.state);
+        io.sockets.emit("led", light, "mode", automode);
     });
 });
 
