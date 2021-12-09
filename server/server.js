@@ -4,6 +4,7 @@ var server = require("http").createServer(app);
 var io = require("socket.io")(server);
 
 var light = { state: false };
+var automode = { state: false };
 
 app.use(express.static(__dirname + "/node_modules"));
 app.get("/", function (req, res, next) {
@@ -23,11 +24,20 @@ io.on("connection", function (client) {
         console.log("Client disconnected!");
     });
 
+    // emit a socket for toggling led
     io.sockets.emit("led", light);
     client.on("toggle", function (state) {
         light.state = !light.state;
         console.log("id: " + client.id + " light: " + light.state);
         io.sockets.emit("led", light);
+    });
+
+    // emit a socket for triggering manual mode
+    io.sockets.emit("mode", automode);
+    client.on("trigger", function (state) {
+        automode.state = !automode.state;
+        console.log("id: " + client.id + " automode: " + automode.state);
+        io.sockets.emit("mode", automode);
     });
 });
 

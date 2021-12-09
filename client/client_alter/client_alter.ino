@@ -29,7 +29,8 @@
 
 #include <Hash.h>
 
-#define ledPin D2
+#define ledPin_MAN D2
+#define ledPin_AUTO D1
 
 ESP8266WiFiMulti WiFiMulti;
 SocketIOclient socketIO;
@@ -112,14 +113,8 @@ void toggleLED(socketIOmessageType_t type, uint8_t *payload, size_t length)
 void setup()
 {
     pinMode(ledPin, OUTPUT);
-    // Serial.begin(921600);
     Serial.begin(115200);
-    while (!Serial)
-        ;
-
-    Serial.print("\nStart ESP8266_WebSocketClientSocketIO on ");
-    Serial.println(ARDUINO_BOARD);
-    Serial.println(WEBSOCKETS_GENERIC_VERSION);
+    while (!Serial);
 
     // Serial.setDebugOutput(true);
 
@@ -158,10 +153,11 @@ void setup()
     // server address, port and URL
     // void begin(IPAddress host, uint16_t port, String url = "/socket.io/?EIO=4", String protocol = "arduino");
     // To use default EIO=4 fron v2.5.1
+    
 
     // event handler
     socketIO.onEvent(socketIOEvent);
-
+    
     socketIO.begin(serverIP, serverPort);
     // toggle led event
     socketIO.onEvent(toggleLED);
@@ -170,7 +166,7 @@ void setup()
 unsigned long messageTimestamp = 0;
 
 void loop()
-{
+{   
     socketIO.loop();
 
     uint64_t now = millis();
