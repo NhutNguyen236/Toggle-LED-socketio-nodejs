@@ -39,8 +39,10 @@ io.on("connection", function (client) {
         light.state = light.state;
         console.log("id: " + client.id + " automode: " + automode.state);
         console.log("id: " + client.id + " light: " + light.state);
-        io.sockets.emit("led", light, "mode", automode);
+        io.sockets.emit("mode", automode);
     });
+
+
 });
 
 server.listen(8000, () => {

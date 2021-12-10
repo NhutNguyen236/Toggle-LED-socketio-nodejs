@@ -21,9 +21,6 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
-
-#include <ArduinoJson.h>
-
 #include <WebSocketsClient_Generic.h>
 #include <SocketIOclient_Generic.h>
 
@@ -38,6 +35,18 @@ SocketIOclient socketIO;
 // Select the IP address according to your local network
 IPAddress serverIP(192, 168, 100, 17);
 uint16_t serverPort = 8000;
+
+// define a global mode value
+// 0 means it is in manual mode, 1 means it is in auto mode
+int automode = 0;
+
+// function to make led automatically toggle
+void autoLed(){
+    digitalWrite(ledPin, HIGH);
+    delay(3000);
+    digitalWrite(ledPin, LOW);
+    delay(1000);
+}
 
 void socketIOEvent(socketIOmessageType_t type, uint8_t *payload, size_t length)
 {
@@ -92,24 +101,47 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t *payload, size_t length)
 // function for toggling the LED using socket.io
 void toggleLED(socketIOmessageType_t type, uint8_t *payload, size_t length)
 {
-    Serial.println((char *)payload);
-    
-    // declare a subs with typee of char which will store up to 5 characters
-    char subs[5];
-    memcpy(subs, &payload[16], 4);
-    subs[4] = '\0';
-    Serial.printf("Original aftercut: %s\n", subs);
+    // check mode from socket 
+    char index[4];
+    char mode_value[4];
+    memcpy(index, &payload[2], 4);
+    index[4] = '\0';
+    Serial.printf("tada %s\n", index);
 
-    if (strcmp(subs, "true") == 0)
-    {
-        digitalWrite(ledPin, HIGH);
-        Serial.println("LED is on");
+    // check if it is mode then check the value
+    if(strcmp(index, "mode") == 0){
+        memcpy(mode_value, &payload[17], 4);
+        mode_value[4] = '\0';
+        Serial.printf("Mode value is %s\n", mode_value);
+        if(strcmp(mode_value, "true") == 0){
+            // update global automode value
+            Serial.println("Automode is on");
+            automode = 1;
+            // call out autoled
+            autoLed();
+        }
     }
-    else
-    {
-        digitalWrite(ledPin, LOW);
+    else{
+        // set automode back to false
+        automode = false;
+        // declare a subs with typee of char which will store up to 5 characters
+        char subs[5];
+        memcpy(subs, &payload[16], 4);
+        subs[4] = '\0';
+        Serial.printf("Original aftercut: %s\n", subs);
+    
+        if (strcmp(subs, "true") == 0)
+        {
+            digitalWrite(ledPin, HIGH);
+            Serial.println("LED is on");
+        }
+        else
+        {
+            digitalWrite(ledPin, LOW);
+        }
+        delay(500);
     }
-    delay(500);
+    
 }
 
 void setup()
@@ -148,7 +180,7 @@ void setup()
     Serial.println(serverPort);
 
     // setReconnectInterval to 10s, new from v2.5.1 to avoid flooding server. Default is 0.5s
-    socketIO.setReconnectInterval(10000);
+    socketIO.setReconnectInterval(2000);
 
     socketIO.setExtraHeaders("Authorization: 1234567890");
 
@@ -162,41 +194,24 @@ void setup()
     
     socketIO.begin(serverIP, serverPort);
     // toggle led event
-    socketIO.onEvent(toggleLED);
+    //socketIO.onEvent(toggleLed);
 }
 
 unsigned long messageTimestamp = 0;
 
 void loop()
 {   
+    // looping the socketio
     socketIO.loop();
-
-    uint64_t now = millis();
-
-    if (now - messageTimestamp > 30000)
-    {
-        messageTimestamp = now;
-
-        // creat JSON message for Socket.IO (event)
-        DynamicJsonDocument doc(1024);
-        JsonArray array = doc.to<JsonArray>();
-
-        // add evnet name
-        // Hint: socket.on('event_name', ....
-        array.add("event_name");
-
-        // add payload (parameters) for the event
-        JsonObject param1 = array.createNestedObject();
-        param1["now"] = (uint32_t)now;
-
-        // JSON to String (serializion)
-        String output;
-        serializeJson(doc, output);
-
-        // Send event
-        socketIO.sendEVENT(output);
-
-        // Print JSON for debugging
-        Serial.println(output);
+    
+    // if it is not in auto mode, make it auto
+    if(automode == 1){
+        autoLed();
+    }
+    else{
+        // else it is in manual mode, make it manual
+        if(automode == 0){
+            socketIO.onEvent(toggleLED);
+        }
     }
 }
